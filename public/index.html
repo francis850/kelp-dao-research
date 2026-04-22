@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Three Forged Calls — A Timeline of the Kelp DAO Exploit</title>
+<meta name="description" content="A vertical timeline of the Kelp DAO rsETH exploit of April 2026, from the first forged lzReceive call to the unreported clawback on April 19." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#0a0a0a;
+  --ink:#e8e3d8;
+  --ink-dim:#b8b2a4;
+  --ink-faint:#6d6858;
+  --gold:#d4a843;
+  --gold-soft:#b4903a;
+  --cream:#efe6d4;
+  --cream-ink:#1a1a1a;
+  --rule:#2a2822;
+  --red:#c0392b;
+  --red-soft:#8a2b1c;
+  --green:#5cb85c;
+  --green-soft:#3a7a3a;
+  --grid:rgba(212,168,67,0.03);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;}
+html,body{background:var(--bg);color:var(--ink);}
+body{
+  font-family:Georgia, "Times New Roman", serif;
+  font-size:20px;
+  line-height:1.65;
+  font-feature-settings:"liga","kern";
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+
+/* ── grid backdrop ─────────────────────────── */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:64px 64px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* progress bar */
+.progress{
+  position:fixed;top:0;left:0;right:0;height:2px;
+  background:transparent;z-index:100;
+}
+.progress__fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg, var(--gold-soft), var(--gold));
+  transition:width 120ms linear;
+}
+
+/* ── page layout ─────────────────────────── */
+main{
+  position:relative;
+  max-width:1440px;
+  margin:0 auto;
+  padding:12vh 6vw 18vh;
+  z-index:1;
+}
+
+/* ── bokeh orbs ─────────────────────────── */
+.bokeh{
+  position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;
+}
+.orb{
+  position:absolute;border-radius:50%;
+  filter:blur(120px);opacity:0.18;
+  transition:opacity 2s ease, background 2s ease;
+}
+.orb--1{top:-8vh;left:-10vw;width:42vw;height:42vw;background:radial-gradient(circle, var(--gold), transparent 70%)}
+.orb--2{top:45vh;right:-10vw;width:38vw;height:38vw;background:radial-gradient(circle, var(--red-soft), transparent 70%);opacity:0}
+.orb--3{top:120vh;left:-12vw;width:36vw;height:36vw;background:radial-gradient(circle, var(--green-soft), transparent 70%);opacity:0}
+.orb--4{top:220vh;right:-14vw;width:44vw;height:44vw;background:radial-gradient(circle, var(--gold-soft), transparent 70%);opacity:0}
+
+/* ── masthead ─────────────────────────── */
+.masthead{
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:end;
+  gap:6vw;
+  padding-bottom:7vh;
+  border-bottom:1px solid var(--rule);
+  margin-bottom:10vh;
+}
+.masthead__stamp{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.32em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:2vh;
+}
+.masthead__title{
+  font-family:Georgia, serif;
+  font-weight:400;
+  font-size:clamp(48px, 6vw, 92px);
+  line-height:1.02;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+}
+.masthead__title em{
+  font-style:italic;color:var(--gold);
+}
+.masthead__deck{
+  font-family:Georgia, serif;
+  font-style:italic;
+  font-size:22px;
+  color:var(--ink-dim);
+  margin-top:3vh;
+  max-width:60ch;
+  line-height:1.5;
+}
+.masthead__meta{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.22em;
+  color:var(--ink-faint);
+  text-transform:uppercase;
+  text-align:right;
+  line-height:1.9;
+  padding-bottom:8px;
+}
+.masthead__dropcap{
+  font-family:Georgia, serif;
+  font-style:italic;
+  font-size:140px;
+  line-height:1;
+  color:var(--gold);
+  float:left;
+  margin:10px 18px -6px 0;
+  font-weight:400;
+}
+
+/* ── timeline rail ─────────────────────────── */
+.timeline{
+  position:relative;
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:5vw;
+  padding-left:6vw;
+}
+.timeline::before{
+  content:"";
+  position:absolute;
+  top:0;bottom:0;
+  left:calc(220px + 2.5vw);
+  width:1px;
+  background:linear-gradient(to bottom,
+    transparent 0%,
+    var(--rule) 4%,
+    var(--rule) 96%,
+    transparent 100%);
+}
+
+/* each entry */
+.entry{
+  display:contents;
+}
+.entry__inner{
+  grid-column:1 / span 2;
+  display:grid;
+  grid-template-columns:220px 1fr;
+  gap:5vw;
+  padding:6vh 0;
+  position:relative;
+  opacity:0;
+  transform:translateY(24px);
+  transition:opacity 800ms ease, transform 800ms ease;
+}
+.entry__inner.visible{opacity:1;transform:translateY(0)}
+.entry__inner:first-of-type{padding-top:0}
+.entry__inner + .entry__inner{border-top:1px solid var(--rule)}
+
+/* node dot on the rail */
+.entry__dot{
+  position:absolute;
+  left:calc(220px + 2.5vw);
+  top:calc(6vh + 12px);
+  width:13px;height:13px;
+  border-radius:50%;
+  transform:translateX(-50%);
+  background:var(--gold);
+  box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--gold);
+  z-index:2;
+}
+.entry--attack .entry__dot{background:var(--gold);box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--gold)}
+.entry--block  .entry__dot{background:var(--green);box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--green)}
+.entry--revert .entry__dot{background:var(--red);box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--red)}
+.entry--meta   .entry__dot{background:var(--ink-faint);box-shadow:0 0 0 3px var(--bg), 0 0 0 4px var(--ink-faint)}
+
+/* timestamp column */
+.stamp{
+  grid-column:1;
+  font-family:'JetBrains Mono', monospace;
+  color:var(--ink-dim);
+  line-height:1.2;
+}
+.stamp__big{
+  display:block;
+  font-size:34px;
+  font-weight:600;
+  color:var(--gold);
+  letter-spacing:-0.02em;
+  margin-bottom:4px;
+}
+.stamp__day{
+  display:block;
+  font-size:11px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin-bottom:6px;
+}
+.stamp__block{
+  display:block;
+  font-size:11px;
+  letter-spacing:0.14em;
+  color:var(--ink-faint);
+  margin-top:10px;
+}
+.entry--revert .stamp__big{color:var(--red)}
+.entry--block  .stamp__big{color:var(--green)}
+.entry--meta   .stamp__big{color:var(--ink-dim);font-size:26px}
+
+/* content column */
+.body{
+  grid-column:2;
+  max-width:68ch;
+}
+.body__kicker{
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.3em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:10px;
+}
+.entry--revert .body__kicker{color:var(--red)}
+.entry--block  .body__kicker{color:var(--green)}
+.entry--meta   .body__kicker{color:var(--ink-faint)}
+.body__headline{
+  font-family:Georgia, serif;
+  font-size:30px;
+  line-height:1.24;
+  letter-spacing:-0.005em;
+  color:var(--ink);
+  margin-bottom:14px;
+}
+.body__headline em{font-style:italic;color:var(--gold)}
+.body p{
+  font-family:Georgia, serif;
+  font-size:19px;
+  line-height:1.65;
+  color:var(--ink-dim);
+  margin-bottom:12px;
+}
+.body p.tight{font-size:17px;line-height:1.55;color:var(--ink-faint)}
+.body a{color:var(--gold);text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)}
+.body a:hover{border-bottom-style:solid}
+.mono, code{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.92em;
+  color:var(--ink);
+  background:rgba(212,168,67,0.07);
+  padding:1px 6px;
+  border-radius:3px;
+  word-break:break-all;
+}
+.gold{color:var(--gold)}
+.red{color:var(--red)}
+.green{color:var(--green)}
+
+/* expanded (hero) entries */
+.entry--hero .body__headline{
+  font-size:44px;
+  line-height:1.12;
+  color:var(--ink);
+  margin-bottom:22px;
+}
+.entry--hero .body p{font-size:20px;color:var(--ink)}
+.entry--hero .stamp__big{font-size:46px;font-weight:700}
+.entry--hero .entry__dot{
+  width:18px;height:18px;
+  box-shadow:0 0 0 3px var(--bg), 0 0 0 5px currentColor, 0 0 22px 4px currentColor;
+}
+.entry--hero.entry--attack .entry__dot{color:var(--gold)}
+.entry--hero.entry--block .entry__dot{color:var(--green)}
+.entry--hero.entry--revert .entry__dot{color:var(--red)}
+
+/* drop cap for one-off use on the first hero */
+.dropcap::first-letter{
+  font-family:Georgia, serif;
+  font-style:italic;
+  font-size:88px;
+  line-height:0.9;
+  color:var(--gold);
+  float:left;
+  margin:4px 14px 0 0;
+  font-weight:400;
+}
+
+/* pull quote (cream panel) */
+.pull{
+  background:var(--cream);
+  color:var(--cream-ink);
+  padding:36px 40px 32px;
+  margin:28px 0 8px;
+  border-left:4px solid var(--gold);
+  max-width:70ch;
+  position:relative;
+}
+.pull p{
+  font-family:Georgia, serif;
+  font-style:italic;
+  font-size:22px;
+  line-height:1.45;
+  color:var(--cream-ink);
+  margin-bottom:14px;
+  max-width:60ch;
+}
+.pull cite{
+  font-style:normal;
+  font-family:'JetBrains Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.28em;
+  color:var(--red-soft);
+  text-transform:uppercase;
+}
+
+/* meta chip + data list */
+.chip{
+  display:inline-block;
+  font-family:'JetBrains Mono', monospace;
+  font-size:10px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  padding:3px 8px;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  color:var(--ink-dim);
+  margin-right:6px;
+  margin-bottom:6px;
+}
+.chip--success{border-color:var(--gold);color:var(--gold)}
+.chip--revert{border-color:var(--red);color:var(--red)}
+.chip--block{border-color:var(--green);color:var(--green)}
+
+.fields{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:6px 18px;
+  margin-top:14px;
+  padding:16px 20px;
+  background:rgba(212,168,67,0.04);
+  border-left:2px solid var(--rule);
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  line-height:1.55;
+}
+.fields dt{color:var(--ink-faint);letter-spacing:0.15em;text-transform:uppercase;font-size:10px;align-self:center}
+.fields dd{color:var(--ink);word-break:break-all}
+.fields dd a{color:var(--gold)}
+
+/* footer / sources */
+footer{
+  position:relative;z-index:1;
+  padding:10vh 8vw;
+  border-top:1px solid var(--rule);
+  max-width:1400px;margin:0 auto;
+}
+footer h2{
+  font-family:Georgia, serif;
+  font-weight:400;
+  font-size:40px;
+  color:var(--ink);
+  margin-bottom:30px;
+  letter-spacing:-0.01em;
+}
+footer .cols{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(340px,1fr));
+  gap:40px;
+}
+footer ol{list-style:decimal;padding-left:22px;color:var(--ink-dim);font-size:15px;line-height:1.7}
+footer ol li{margin-bottom:10px}
+footer a{color:var(--gold);text-decoration:none;border-bottom:1px dotted rgba(212,168,67,0.4)}
+footer a:hover{border-bottom-style:solid}
+footer .note{
+  margin-top:40px;padding-top:26px;border-top:1px dashed var(--rule);
+  font-family:Georgia, serif;font-style:italic;font-size:15px;color:var(--ink-faint);
+  max-width:70ch;
+}
+
+/* responsive */
+@media (max-width: 900px){
+  .masthead{grid-template-columns:1fr}
+  .masthead__meta{text-align:left;padding-bottom:0;margin-top:2vh}
+  .timeline{grid-template-columns:1fr;padding-left:28px;gap:0}
+  .timeline::before{left:10px;}
+  .entry__inner{grid-template-columns:1fr;gap:0;padding:5vh 0}
+  .entry__dot{left:10px;top:calc(5vh + 12px)}
+  .stamp{grid-column:1;margin-bottom:10px}
+  .body{grid-column:1}
+  .entry--hero .body__headline{font-size:32px}
+}
+</style>
+</head>
+<body>
+
+<div class="progress"><div class="progress__fill" id="progress"></div></div>
+
+<div class="bokeh" aria-hidden="true">
+  <div class="orb orb--1"></div>
+  <div class="orb orb--2"></div>
+  <div class="orb orb--3"></div>
+  <div class="orb orb--4"></div>
+</div>
+
+<main>
+
+  <!-- ── masthead ─────────────────────────── -->
+  <header class="masthead">
+    <div>
+      <div class="masthead__stamp">A timeline · April 2026</div>
+      <h1 class="masthead__title"><em>Three</em> forged calls</h1>
+      <p class="masthead__deck"><span class="masthead__dropcap">O</span>ne succeeded. Two were blocked at the token layer by a defense mechanism nobody has written about. A clawback fourteen hours later recovered a third of the loss, quietly.</p>
+    </div>
+    <div class="masthead__meta">
+      Kelp DAO · rsETH<br/>
+      LayerZero V2 Endpoint<br/>
+      On-chain record<br/>
+      Drafted 2026&thinsp;·&thinsp;04&thinsp;·&thinsp;22
+    </div>
+  </header>
+
+  <!-- ── timeline ─────────────────────────── -->
+  <div class="timeline">
+
+    <!-- ENTRY 1 — prep tx -->
+    <div class="entry">
+      <div class="entry__inner entry--attack">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">17:35:11</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908283</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Prep · tx 1 of 6</div>
+          <h2 class="body__headline">The attacker calls a helper contract.</h2>
+          <p>An EOA at <code>0x4966…575e</code> (funded earlier through Tornado Cash, per QuillAudits) submits its first transaction to an attacker-deployed helper at <code>0xc02ab410…24c2</code>. Function selector <code>0x0894edf1</code>. Twenty-four seconds later, the drain.</p>
+          <span class="chip chip--success">success</span>
+          <span class="chip">gas 94k</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 2 — CALL_1 (HERO) -->
+    <div class="entry">
+      <div class="entry__inner entry--attack entry--hero">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">17:35:35</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908285</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Call 1 · the drain</div>
+          <h2 class="body__headline"><em>lzReceive</em> succeeds. One hundred sixteen thousand, five hundred rsETH release from escrow.</h2>
+          <p class="dropcap">The caller invokes <code>lzReceive</code> on the LayerZero V2 Endpoint. The packet claims a deposit on Unichain (<code>srcEid 30320</code>) from Kelp's own Unichain contract (<code>0xc3eacf…9f58</code>), with <code>nonce 308</code>, recipient <code>0x8b1b6c9a…0d3b</code>. No deposit happened on Unichain. The compromised DVN signs it anyway. The OFT adapter on Ethereum accepts the signature and releases the escrow.</p>
+          <p>Gas used: 94,456. Three logs emitted: rsETH token transfer, Kelp OFT mint-equivalent, LayerZero Endpoint delivery. The attacker's address now holds <span class="gold">$293 million</span> of rsETH.</p>
+          <div class="pull">
+            <p>Eighteen percent of the circulating supply, minted against nothing, in a single thirty-second window.</p>
+            <cite>per LayerZero V2 Endpoint logs, block 24908285</cite>
+          </div>
+          <dl class="fields">
+            <dt>tx</dt><dd><a href="https://etherscan.io/tx/0x1ae232da212c45f35c1525f851e4c41d529bf18af862d9ce9fd40bf709db4222">0x1ae232da…b4222</a></dd>
+            <dt>srcEid</dt><dd>30320 <span style="color:var(--ink-faint)">(Unichain)</span></dd>
+            <dt>sender</dt><dd>0xc3eacf0612346366db554c991d7858716db09f58</dd>
+            <dt>nonce</dt><dd>308</dd>
+            <dt>receiver</dt><dd>0x85d456b2dff1fd8245387c0bfb64dfb700e98ef3 <span style="color:var(--ink-faint)">(rsETH OFT adapter)</span></dd>
+            <dt>guid</dt><dd>0x3f4510d855cf3a805fec59daafae640d290749b7bf1e5450f91b5fb0018b3b4e</dd>
+            <dt>status</dt><dd><span class="gold">SUCCESS</span></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 3 — distribution -->
+    <div class="entry">
+      <div class="entry__inner entry--attack">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">17:37–17:42</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">~5 minutes</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Distribution · +2 to +7 min</div>
+          <h2 class="body__headline">The attacker splits 116,500 rsETH across thirteen downstream wallets.</h2>
+          <p>Seven of the thirteen become the named cash-out cluster documented later by QuillAudits and Innora: <code>0x1f4c1c2e</code>, <code>0xeba786c9</code>, <code>0xcbb24a6b</code>, <code>0x8d11aeac</code>, <code>0xbb6a6006</code>, <code>0x1b748b68</code>, <code>0xe9e2f48b</code>. Most are fresh EOAs created hours earlier, funded only with gas.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 4 — bridge + Arbitrum mints -->
+    <div class="entry">
+      <div class="entry__inner entry--attack">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">17:42–18:15</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">~33 minutes</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Bridge · Ethereum to Arbitrum</div>
+          <h2 class="body__headline">38,973 rsETH bridged to Arbitrum through the same OFT they just forged.</h2>
+          <p>Five of the cash-out EOAs send chunks of their rsETH to the OFT adapter. Each burn on Ethereum produces a mint on Arbitrum within seven to nine minutes. Those Arbitrum mints are the only cross-chain flow of the attack the public record reflects.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 5 — Aave deposits at stale oracle -->
+    <div class="entry">
+      <div class="entry__inner entry--attack">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">17:53–18:15</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">Arbitrum</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Extraction · Aave V3 Arbitrum</div>
+          <h2 class="body__headline">$98 million of rsETH deposited at Aave's stale oracle price of $2,519.52.</h2>
+          <p>Five whale EOAs supply rsETH into Aave V3 Arbitrum over a twenty-two-minute window. The Aave oracle, lagging DEX price discovery, still treats rsETH as fully backed. Deposits value the collateral at pre-exploit par. The ratchet: borrow ETH against rsETH at a valuation that has already broken.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 6 — blockUserTransfers (HERO) -->
+    <div class="entry">
+      <div class="entry__inner entry--block entry--hero">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:18:11</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908497</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">The defense · 42 min 36 sec after the drain</div>
+          <h2 class="body__headline"><em>blockUserTransfers</em> lands. Ten addresses frozen in one transaction.</h2>
+          <p class="dropcap">An LRT manager at Kelp calls <code>blockUserTransfers</code> on the rsETH implementation contract. Ten addresses enter a 24-hour transfer block: the seven named cash-out EOAs, plus three <span class="gold">look-alike decoys</span> that share leading hex with the real ones (<code>0xeba73b81…</code> next to <code>0xeba786c9…</code>; <code>0x1f4cf71e…</code> next to <code>0x1f4c1c2e…</code>; <code>0xcbb25ef4…</code> next to <code>0xcbb24a6b…</code>). Someone on the Kelp side anticipated typo-squat laundering and pre-empted it.</p>
+          <p>The block is time-boxed. <code>transfersBlockedUntil[account]</code> is set to <code>block.timestamp + 1 days</code> for each. If the block is not refreshed, it expires. Every transfer to or from a blocked address now reverts with <code>TransfersBlocked(address, uint256)</code>, selector <code>0x5f4854f9</code>.</p>
+          <dl class="fields">
+            <dt>tx</dt><dd><a href="https://etherscan.io/tx/0x5ab8496916bac414affc3fdfbd2ab5be9e361ba14a0c92b8d25516d976e3c835">0x5ab84969…c835</a></dd>
+            <dt>function</dt><dd>blockUserTransfers(address[])</dd>
+            <dt>role</dt><dd>onlyLRTManager</dd>
+            <dt>duration</dt><dd>86,400 seconds (24h, refreshable)</dd>
+            <dt>expires</dt><dd>2026-04-19 18:18:11 UTC <span style="color:var(--ink-faint)">unless refreshed</span></dd>
+            <dt>blocked</dt><dd>10 addresses (7 real + 3 decoys)</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 7 — _pause() -->
+    <div class="entry">
+      <div class="entry__inner entry--block">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:21:00</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">~+2m 49s</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Secondary defense</div>
+          <h2 class="body__headline">Kelp's emergency multisig calls <em>pause()</em>.</h2>
+          <p>This is the "46-minute freeze" credited across press coverage with blocking further drains. It is a different function from <code>blockUserTransfers</code>, executed two minutes and forty-nine seconds later. Both defenses sit in the same contract. The press conflated them. The block is what stopped the retries.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 8 — block main wallet -->
+    <div class="entry">
+      <div class="entry__inner entry--block">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:23:11</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908522</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Block · roster expansion</div>
+          <h2 class="body__headline">Attacker's main wallet added.</h2>
+          <p><code>0x8b1b6c9a6db1304000412dd21ae6a70a82d60d3b</code>, the primary intake address from <code>lzReceive</code>, enters the block list five minutes after the initial batch. Cash-out addresses were frozen before the source wallet. The order matters: downstream laundering paths closed first.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 9 — CALL_2 revert -->
+    <div class="entry">
+      <div class="entry__inner entry--revert">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:26:35</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908539</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Call 2 · revert</div>
+          <h2 class="body__headline">The attacker tries again. A second forged packet, <em>nonce 309</em>.</h2>
+          <p>Fifty-one minutes after the first drain, the same EOA submits a new <code>lzReceive</code>. Same <code>srcEid</code>, same sender, new packet, new guid. The DVN has not yet shut down; the signature clears the Endpoint. But when the OFT adapter tries to issue rsETH to <code>0x8b1b6c9a…</code>, the token contract's <code>_enforceNotBlocked</code> fires and the whole transaction reverts.</p>
+          <dl class="fields">
+            <dt>tx</dt><dd><a href="https://etherscan.io/tx/0x8509533aed1c9257242b44447daf4fc5d0c562972f366c98cea92dc531783e53">0x8509533a…3e53</a></dd>
+            <dt>nonce</dt><dd>309</dd>
+            <dt>gas used</dt><dd>65,104</dd>
+            <dt>logs</dt><dd>0 <span style="color:var(--ink-faint)">(revert before execution)</span></dd>
+            <dt>revert</dt><dd><code>TransfersBlocked(0x8b1b6c9a…, 1776622991)</code></dd>
+            <dt>status</dt><dd><span class="red">REVERT</span></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 10 — CALL_3 revert -->
+    <div class="entry">
+      <div class="entry__inner entry--revert">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:28:11</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908547</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Call 3 · replay</div>
+          <h2 class="body__headline">Identical calldata, resubmitted. Same revert, same gas.</h2>
+          <p>CALL_3 is byte-identical to CALL_2 (same nonce, same guid). Gas used: 65,104, the exact match of CALL_2. A mechanical retry, likely from a script that panicked when the first attempt didn't confirm the way the attacker expected. The token contract blocks it again.</p>
+          <span class="chip chip--revert">revert</span>
+          <span class="chip">gas 65,104</span>
+          <span class="chip">logs 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 11 — block OFT adapter -->
+    <div class="entry">
+      <div class="entry__inner entry--block">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">18:48:35</span>
+          <span class="stamp__day">Sat · Apr 18</span>
+          <span class="stamp__block">block 24908648</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Block · adapter itself</div>
+          <h2 class="body__headline">Kelp blocks the OFT adapter.</h2>
+          <p>The Kelp rsETH OFT adapter at <code>0x85d456b2dff1fd8245387c0bfb64dfb700e98ef3</code> enters the block list. Any transfer to or from the adapter now reverts for 24 hours. This is preparation. The adapter is blocked so that <code>recoverFrozenFunds</code> can operate against it without interference from any in-flight cross-chain calls.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 12 — FrozenFundsRecovered (HERO) -->
+    <div class="entry">
+      <div class="entry__inner entry--block entry--hero">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">07:15:59</span>
+          <span class="stamp__day">Sun · Apr 19</span>
+          <span class="stamp__block">block 24912376</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">The clawback · 13h 40m after the drain</div>
+          <h2 class="body__headline">Kelp recovers <em>40,373.72 rsETH</em> from the OFT adapter to custody.</h2>
+          <p class="dropcap">A Kelp admin calls <code>recoverFrozenFunds(0x85d456b2…)</code> on the rsETH implementation. The function sweeps the entire rsETH balance of the blocked adapter to a pre-configured custody address: <code>0xb3696a817d01c8623e66d156b6798291fa10a46d</code>. Quote from <code>RSETH.sol</code> line 202: "Bypass transfer block enforcement when transferring to custody address." The block mechanism exists to enable the clawback, not just to buy time.</p>
+          <p>Forty thousand three hundred seventy-three rsETH, worth approximately <span class="green">$101.8 million</span> at the pre-drain oracle price. Thirty-four point seven percent of the stolen supply, reclaimed in a single transaction. Combined with the <span class="gold">$71 million</span> that the Arbitrum Security Council will freeze two days later, total recovery hits fifty-nine percent.</p>
+          <p>This event is public. The <code>FrozenFundsRecovered(from, to, amount)</code> log is indexable on any Ethereum node. Every forensic report this piece compared against, from QuillAudits to Innora to DeFiPrime to Kelp's own Aave governance post, passed over it. The contract was designed for exactly this case. The case arrived. The function executed. No headline noticed.</p>
+          <div class="pull">
+            <p>The strongest defensive moment of the attack was not a pause and not a bridge shutdown. It was a function call four hundred ten lines deep in the token source, from a role key held by one Kelp admin, that returned forty thousand tokens to the issuer before anyone wrote about it.</p>
+            <cite>on-chain record, block 24912376</cite>
+          </div>
+          <dl class="fields">
+            <dt>tx</dt><dd><a href="https://etherscan.io/tx/0x23490696c42f06730524add0665b23be7326b15cbfe385b97b924c86bec01b53">0x23490696…01b53</a></dd>
+            <dt>function</dt><dd>recoverFrozenFunds(address)</dd>
+            <dt>role</dt><dd>onlyLRTAdmin</dd>
+            <dt>from</dt><dd>0x85d456b2dff1fd8245387c0bfb64dfb700e98ef3 <span style="color:var(--ink-faint)">(OFT adapter)</span></dd>
+            <dt>to</dt><dd>0xb3696a817d01c8623e66d156b6798291fa10a46d <span style="color:var(--ink-faint)">(custody)</span></dd>
+            <dt>amount</dt><dd>40,373.72 rsETH <span style="color:var(--ink-faint)">(~$101.8M)</span></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 13 — refresh cadence -->
+    <div class="entry">
+      <div class="entry__inner entry--block">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">Apr 19 → 21</span>
+          <span class="stamp__day">Sun → Tue</span>
+          <span class="stamp__block">ongoing</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Refresh cadence · 10 transactions, 3 days</div>
+          <h2 class="body__headline">Kelp refreshes the blocks on a rolling twenty-four-hour schedule.</h2>
+          <p>Each <code>blockUserTransfers</code> call resets the 24-hour countdown for its listed addresses. Kelp submits a new refresh before each expiry, expanding the roster as new related wallets are identified. Count through Apr 21 22:53 UTC: ten refresh transactions, roster grows from ten to eighteen addresses. The block is being maintained as a deliberate operational posture, not set and forgotten.</p>
+          <p class="tight">Refresh txs: <code>0x04d72853</code>, <code>0x8eada458</code>, <code>0x2e41e9c1</code>, <code>0x0501858</code>, <code>0xf1683a12</code>, <code>0xe043ce2a</code>, <code>0x46333b18</code>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 14 — Arbitrum SC freeze -->
+    <div class="entry">
+      <div class="entry__inner entry--block">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">03:26:00</span>
+          <span class="stamp__day">Tue · Apr 21</span>
+          <span class="stamp__block">block 454,686,044</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Arbitrum Security Council · Type-101</div>
+          <h2 class="body__headline">$71 million in ETH frozen via a privileged sequencer transaction.</h2>
+          <p>Nine of twelve Security Council members vote. The chain itself executes a Type-101 ArbitrumUnsignedTx forcibly moving 30,766 ETH from the attacker's Arbitrum consolidation wallet <code>0x5d3919f1…</code> to a governance-held recovery sink. First use of the mechanism in Arbitrum's history. The public framing calls it a freeze; the on-chain action is a seize.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 15 — attacker final move -->
+    <div class="entry">
+      <div class="entry__inner entry--attack">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">08:02:35</span>
+          <span class="stamp__day">Tue · Apr 21</span>
+          <span class="stamp__block">~+4h 36m</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Attacker · last visible move</div>
+          <h2 class="body__headline">The attack-caller EOA burns its final 0.993 ETH.</h2>
+          <p>The wallet that made all three <code>lzReceive</code> calls makes its sixth and final transaction: a plain ETH transfer of 0.993 ETH to <code>0xabc82c89…</code>. Six transactions in lifetime. The rest of the haul moves through separate, already-traced laundering paths (THORChain, Chainflip, BitTorrent, Umbra) documented by ZachXBT and PeckShield.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTRY 16 — misattribution -->
+    <div class="entry">
+      <div class="entry__inner entry--meta">
+        <div class="entry__dot"></div>
+        <div class="stamp">
+          <span class="stamp__big">post hoc</span>
+          <span class="stamp__day">Apr 18–22</span>
+          <span class="stamp__block">press record</span>
+        </div>
+        <div class="body">
+          <div class="body__kicker">Closing note · what the record says</div>
+          <h2 class="body__headline">Three misattributions live in the public coverage.</h2>
+          <p>The "46-minute multisig freeze" is credited with blocking further drains. It was <code>pause()</code>, three minutes after the real defense, and it stops new mints, not transfers from existing addresses.</p>
+          <p>LayerZero's DVN shutdown is credited with stopping the retries. The retries reverted at the rsETH token, not at the Endpoint. Zero logs on both retry transactions confirm the revert sits upstream of any cross-chain message handling.</p>
+          <p>The "additional drains blocked" is framed as pause-derived. The retries blocked because <code>blockUserTransfers</code> had already added the attacker to the token-level block list three minutes earlier.</p>
+          <p>None of this is secret. All of it is on chain. The public record has not yet caught up.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ── footer ─────────────────────────── -->
+<footer>
+  <h2>Sources & Notes</h2>
+  <div class="cols">
+    <div>
+      <ol>
+        <li>LayerZero V2 Endpoint, Ethereum mainnet, <a href="https://etherscan.io/address/0x1a44076050125825900e736c501f859c50fe728c">0x1a44…728c</a>; all three <code>lzReceive</code> transactions read directly via <code>eth_getTransactionByHash</code> and <code>eth_getTransactionReceipt</code> on public RPCs (llamarpc, publicnode, cloudflare).</li>
+        <li>rsETH token proxy <a href="https://etherscan.io/address/0xa1290d69c65a6fe4df752f95823fae25cb99e5a7">0xa1290d69…e5a7</a>; implementation <code>0x7159107483e623707c18c6e06cbc095bd0717783</code>. Source verified via Sourcify; the <code>TransfersBlocked</code> error is defined at line 2787 of <code>RSETH.sol</code>, enforced by <code>_enforceNotBlocked</code> at line 13544.</li>
+        <li>Revert selector <code>0x5f4854f9</code> resolved to <code>TransfersBlocked(address,uint256)</code> via <a href="https://openchain.xyz/signatures?query=0x5f4854f9">openchain.xyz</a>. 4byte.directory returned no match.</li>
+        <li>All <code>UserTransfersBlocked</code> and <code>FrozenFundsRecovered</code> events retrieved via <code>eth_getLogs</code> on the rsETH proxy across blocks 24,908,285 to 24,940,000. Results cached in <code>assets/tier4_verify/blocked_events_rpc.json</code>.</li>
+        <li>QuillAudits, <a href="https://www.quillaudits.com/blog/hack-analysis/kelp-dao-hack">Kelp DAO hack analysis</a>. Lists seven cash-out EOAs and attribution.</li>
+      </ol>
+    </div>
+    <div>
+      <ol start="6">
+        <li>Innora.ai, <a href="https://innora.ai/blog/kelp-dao-layerzero-292m-exploit-forensic-analysis">Kelp DAO LayerZero $292M exploit forensic analysis</a>.</li>
+        <li>DeFiPrime, <a href="https://defiprime.com/kelpdao-rseth-exploit">KelpDAO rsETH exploit</a>. Names primary attacker wallet and Ethereum exploit tx.</li>
+        <li>LayerZero, <a href="https://layerzero.network/blog/kelpdao-incident-statement">KelpDAO incident statement</a>. Attributes to Lazarus/TraderTraitor with preliminary confidence (per Safeheron's post-mortem).</li>
+        <li>Aave governance, <a href="https://governance.aave.com/t/rseth-incident-report-april-20-2026/24580">rsETH incident report, April 20, 2026</a>. Lists seven attacker branch addresses and aggregate borrow exposure across chains.</li>
+        <li>Arbitrum Foundation, <a href="https://forum.arbitrum.foundation/t/security-council-emergency-action-21-04-2026/30803">Security Council emergency action, 2026-04-21</a>. Type-101 ArbitrumUnsignedTx details.</li>
+        <li>CoinDesk, <a href="https://www.coindesk.com/tech/2026/04/19/2026-s-biggest-crypto-exploit-kelp-dao-hit-for-usd292-million-with-wrapped-ether-stranded-across-20-chains">Kelp DAO exploit coverage, April 19</a>.</li>
+        <li>DL News, <a href="https://www.dlnews.com/articles/defi/arbitrum-takes-back-funds-from-kelp-dao-hacker/">Arbitrum takes back $71M from Kelp DAO hacker</a>.</li>
+        <li>Post-freeze laundering traces (THORChain, Chainflip, BitTorrent, Umbra) per public posts from ZachXBT and PeckShield, summarized in <a href="https://www.theblock.co/post/398239/kelp-dao-exploiter-begins-moving-stolen-funds-across-chains-after-arbitrum-eth-freeze">The Block, April 21</a>.</li>
+      </ol>
+    </div>
+  </div>
+  <p class="note">Every timestamp is the on-chain block timestamp (UTC), as returned by <code>eth_getBlockByNumber</code>. Amounts in USD are stated at the pre-drain Aave oracle rate of $2,519.52 per rsETH unless otherwise noted. Lazarus attribution carries the "per Safeheron" qualifier per the Kelp DAO Canon's defamation guardrails. No Kelp or LayerZero individual is named in this piece. For the essay-form reading of the same material, see <code>index_essay.html</code> alongside this file.</p>
+</footer>
+
+<script>
+// progress bar
+const bar = document.getElementById('progress');
+const update = () => {
+  const sc = document.documentElement.scrollTop || document.body.scrollTop;
+  const max = (document.documentElement.scrollHeight || document.body.scrollHeight) - window.innerHeight;
+  bar.style.width = Math.min(100, (sc / max) * 100) + '%';
+};
+window.addEventListener('scroll', update, {passive:true});
+window.addEventListener('resize', update);
+update();
+
+// IntersectionObserver fade-in
+const entries = document.querySelectorAll('.entry__inner');
+const io = new IntersectionObserver((ents) => {
+  ents.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      io.unobserve(e.target);
+    }
+  });
+}, {threshold:0.12, rootMargin:'-40px 0px'});
+entries.forEach(e => io.observe(e));
+
+// shift bokeh orb opacities with scroll position (gold → red → green arc)
+const orb1 = document.querySelector('.orb--1');
+const orb2 = document.querySelector('.orb--2');
+const orb3 = document.querySelector('.orb--3');
+const orb4 = document.querySelector('.orb--4');
+window.addEventListener('scroll', () => {
+  const sc = document.documentElement.scrollTop || document.body.scrollTop;
+  const h = window.innerHeight;
+  const p = Math.min(1, sc / (h * 6));
+  orb1.style.opacity = (0.22 - p * 0.12).toFixed(3);
+  orb2.style.opacity = Math.max(0, Math.min(0.20, p * 0.35 - 0.05)).toFixed(3);
+  orb3.style.opacity = Math.max(0, Math.min(0.20, p * 0.6 - 0.25)).toFixed(3);
+  orb4.style.opacity = Math.max(0, Math.min(0.18, p * 0.9 - 0.55)).toFixed(3);
+}, {passive:true});
+</script>
+
+</body>
+</html>
