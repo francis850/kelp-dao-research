@@ -4,9 +4,7 @@
   "private": true,
   "description": "On-chain forensic research on the Kelp DAO rsETH exploit of April 2026.",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo \"Static site; nothing to build.\" && exit 0",
-    "deploy": "vercel --prod"
+    "build": "echo \"Static site; nothing to build.\" && exit 0"
   },
   "license": "CC-BY-4.0"
 }
